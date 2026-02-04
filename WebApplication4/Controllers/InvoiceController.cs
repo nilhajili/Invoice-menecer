@@ -1,0 +1,87 @@
+using Microsoft.AspNetCore.Mvc;
+using AutoMapper;
+using WebApplication4.Models;
+using WebApplication4.Services.Interfaces;
+using WebApplication4.DTOs;
+
+namespace WebApplication4.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class InvoiceController : ControllerBase
+{
+    private readonly IInvoiceService _service;
+    private readonly IMapper _mapper;
+
+    public InvoiceController(IInvoiceService service, IMapper mapper)
+    {
+        _service = service;
+        _mapper = mapper;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetAll()
+    {
+        var invoices = await _service.GetAllAsync();
+        return Ok(_mapper.Map<IEnumerable<InvoiceDto>>(invoices));
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<InvoiceDto>> GetById(Guid id)
+    {
+        var invoice = await _service.GetByIdAsync(id);
+        if (invoice == null) return NotFound();
+        return Ok(_mapper.Map<InvoiceDto>(invoice));
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<InvoiceDto>> Create([FromBody] CreateInvoiceDto dto)
+    {
+        var invoice = _mapper.Map<Invoice>(dto);
+        invoice.TotalSum = invoice.Rows.Sum(r => r.Sum);
+
+        var created = await _service.CreateAsync(invoice);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, _mapper.Map<InvoiceDto>(created));
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<InvoiceDto>> Update(Guid id, [FromBody] UpdateInvoiceDto dto)
+    {
+        var invoice = _mapper.Map<Invoice>(dto);
+        invoice.TotalSum = invoice.Rows.Sum(r => r.Sum);
+
+        var updated = await _service.UpdateAsync(id, invoice);
+        if (updated == null)
+            return BadRequest("Only non-sent invoices can be updated.");
+
+        return Ok(_mapper.Map<InvoiceDto>(updated));
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] InvoiceStatusDto dto)
+    {
+        var result = await _service.ChangeStatusAsync(id, dto.Status);
+        if (!result)
+            return BadRequest("Cannot change status.");
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> HardDelete(Guid id)
+    {
+        var result = await _service.HardDeleteAsync(id);
+        if (!result)
+            return BadRequest("Only non-sent invoices can be deleted.");
+
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/archive")]
+    public async Task<IActionResult> Archive(Guid id)
+    {
+        var result = await _service.ArchiveAsync(id);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+}
