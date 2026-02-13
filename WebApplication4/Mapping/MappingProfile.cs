@@ -8,6 +8,11 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        CreateMap(typeof(PagedResult<>), typeof(PagedResult<>))
+            .ConvertUsing(typeof(PagedResultTypeConverter<,>));
+        
+        CreateMap<Customer, CustomerResponseDto>();
+
         CreateMap<Customer, CustomerDto>();
 
         CreateMap<CreateCustomerDto, Customer>()
@@ -37,6 +42,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Sum, opt => opt.MapFrom(src => src.Quantity * src.Amount));
         
         CreateMap<Invoice, InvoiceDto>();
+        CreateMap<InvoiceRow, InvoiceRowResponseDto>();
+
+        CreateMap<Invoice, InvoiceResponseDto>()
+            .ForMember(d => d.CustomerName,
+                o => o.MapFrom(s => s.Customer.Name));
 
         CreateMap<CreateInvoiceDto, Invoice>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())

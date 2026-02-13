@@ -19,27 +19,11 @@ public class InvoiceController : ControllerBase
         _mapper = mapper;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetAll()
-    {
-        var invoices = await _service.GetAllAsync();
-        return Ok(_mapper.Map<IEnumerable<InvoiceDto>>(invoices));
-    }
-
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<InvoiceDto>> GetById(Guid id)
-    {
-        var invoice = await _service.GetByIdAsync(id);
-        if (invoice == null) return NotFound();
-        return Ok(_mapper.Map<InvoiceDto>(invoice));
-    }
-
     [HttpPost]
     public async Task<ActionResult<InvoiceDto>> Create([FromBody] CreateInvoiceDto dto)
     {
         var invoice = _mapper.Map<Invoice>(dto);
         invoice.TotalSum = invoice.Rows.Sum(r => r.Sum);
-
         var created = await _service.CreateAsync(invoice);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, _mapper.Map<InvoiceDto>(created));
     }
@@ -49,11 +33,9 @@ public class InvoiceController : ControllerBase
     {
         var invoice = _mapper.Map<Invoice>(dto);
         invoice.TotalSum = invoice.Rows.Sum(r => r.Sum);
-
         var updated = await _service.UpdateAsync(id, invoice);
         if (updated == null)
             return BadRequest("Only non-sent invoices can be updated.");
-
         return Ok(_mapper.Map<InvoiceDto>(updated));
     }
 
@@ -63,7 +45,6 @@ public class InvoiceController : ControllerBase
         var result = await _service.ChangeStatusAsync(id, dto.Status);
         if (!result)
             return BadRequest("Cannot change status.");
-
         return NoContent();
     }
 
@@ -73,7 +54,6 @@ public class InvoiceController : ControllerBase
         var result = await _service.HardDeleteAsync(id);
         if (!result)
             return BadRequest("Only non-sent invoices can be deleted.");
-
         return NoContent();
     }
 
@@ -81,7 +61,24 @@ public class InvoiceController : ControllerBase
     public async Task<IActionResult> Archive(Guid id)
     {
         var result = await _service.ArchiveAsync(id);
-        if (!result) return NotFound();
+        if (!result)
+            return NotFound();
         return NoContent();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetList([FromQuery] InvoiceQueryDto query)
+    {
+        var result = await _service.GetListAsync(query);
+        return Ok(_mapper.Map<PagedResult<InvoiceResponseDto>>(result));
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<InvoiceDto>> GetById(Guid id)
+    {
+        var invoice = await _service.GetByIdAsync(id);
+        if (invoice == null)
+            return NotFound();
+        return Ok(_mapper.Map<InvoiceDto>(invoice));
     }
 }

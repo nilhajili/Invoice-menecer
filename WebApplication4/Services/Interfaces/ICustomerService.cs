@@ -1,8 +1,11 @@
 using  WebApplication4.Models;
+using WebApplication4.DTOs;
 namespace WebApplication4.Services.Interfaces;
+
 
 public interface ICustomerService
 {
+    Task<PagedResult<Customer>> GetListAsync(CustomerQueryDto query);
     Task<IEnumerable<Customer>> GetAllAsync();
     Task<Customer?> GetByIdAsync(Guid id);
     Task<Customer> CreateAsync(Customer customer);

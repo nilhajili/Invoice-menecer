@@ -19,21 +19,6 @@ public class CustomerController : ControllerBase
         _mapper = mapper;
     }
 
-    [HttpGet] 
-    public async Task<ActionResult<IEnumerable<CustomerDto>>> GetAll()
-    {
-        var customers = await _service.GetAllAsync();
-        return Ok(_mapper.Map<IEnumerable<CustomerDto>>(customers));
-    }
-
-    [HttpGet("{id:guid}")] 
-    public async Task<ActionResult<CustomerDto>> GetById(Guid id)
-    {
-        var customer = await _service.GetByIdAsync(id);
-        if (customer == null) return NotFound();
-        return Ok(_mapper.Map<CustomerDto>(customer));
-    }
-
     [HttpPost]
     public async Task<ActionResult<CustomerDto>> Create([FromBody] CreateCustomerDto dto)
     {
@@ -65,5 +50,20 @@ public class CustomerController : ControllerBase
         var result = await _service.ArchiveAsync(id);
         if (!result) return NotFound();
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<CustomerDto>> GetById(Guid id)
+    {
+        var customer = await _service.GetByIdAsync(id);
+        if (customer == null) return NotFound();
+        return Ok(_mapper.Map<CustomerDto>(customer));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetList([FromQuery] CustomerQueryDto query)
+    {
+        var result = await _service.GetListAsync(query);
+        return Ok(_mapper.Map<PagedResult<CustomerResponseDto>>(result));
     }
 }

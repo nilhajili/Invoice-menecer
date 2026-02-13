@@ -2,6 +2,7 @@ using WebApplication4.Services.Interfaces;
 using WebApplication4.Models;
 using WebApplication4.Data;
 using Microsoft.EntityFrameworkCore;
+using WebApplication4.DTOs;
 namespace WebApplication4.Services;
 
 public class InvoiceService : IInvoiceService
@@ -12,7 +13,43 @@ public class InvoiceService : IInvoiceService
     {
         _context = context;
     }
+    public async Task<PagedResult<Invoice>> GetListAsync(InvoiceQueryDto query)
+    {
+        IQueryable<Invoice> invoices = _context.Invoices;
 
+        if (query.CustomerId.HasValue)
+            invoices = invoices.Where(x => x.CustomerId == query.CustomerId);
+
+        if (query.Status.HasValue)
+            invoices = invoices.Where(x => x.Status == query.Status);
+
+        if (query.FromDate.HasValue)
+            invoices = invoices.Where(x => x.CreatedAt >= query.FromDate);
+
+        if (query.ToDate.HasValue)
+            invoices = invoices.Where(x => x.CreatedAt <= query.ToDate);
+
+        invoices = query.OrderBy switch
+        {
+            "TotalSum" => query.Desc ? invoices.OrderByDescending(x => x.TotalSum) : invoices.OrderBy(x => x.TotalSum),
+            _ => query.Desc ? invoices.OrderByDescending(x => x.CreatedAt) : invoices.OrderBy(x => x.CreatedAt)
+        };
+
+        int total = await invoices.CountAsync();
+
+        var items = await invoices
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .ToListAsync();
+
+        return new PagedResult<Invoice>
+        {
+            Items = items,
+            TotalCount = total,
+            Page = query.Page,
+            PageSize = query.PageSize
+        };
+    }
     public async Task<IEnumerable<Invoice>> GetAllAsync()
         => await _context.Invoices
             .Include(i => i.Rows)

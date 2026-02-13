@@ -1,9 +1,11 @@
 using WebApplication4.Models;
+using WebApplication4.DTOs;
 
 namespace WebApplication4.Services.Interfaces
 {
     public interface IInvoiceService
     {
+        Task<PagedResult<Invoice>> GetListAsync(InvoiceQueryDto query);
         Task<IEnumerable<Invoice>> GetAllAsync();
         Task<Invoice?> GetByIdAsync(Guid id);
         Task<Invoice> CreateAsync(Invoice invoice);

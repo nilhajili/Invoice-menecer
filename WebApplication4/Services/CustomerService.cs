@@ -1,6 +1,7 @@
 using WebApplication4.Services.Interfaces;
 using WebApplication4.Models;
 using WebApplication4.Data;
+using WebApplication4.DTOs;
 using Microsoft.EntityFrameworkCore;
 namespace WebApplication4.Services;
 
@@ -26,6 +27,37 @@ public class CustomerService : ICustomerService
         _context.Customers.Add(customer);
         await _context.SaveChangesAsync();
         return customer;
+    }
+    public async Task<PagedResult<Customer>> GetListAsync(CustomerQueryDto query)
+    {
+        IQueryable<Customer> customers = _context.Customers;
+
+        if (!string.IsNullOrWhiteSpace(query.Name))
+            customers = customers.Where(x => x.Name.Contains(query.Name));
+
+        if (!string.IsNullOrWhiteSpace(query.Email))
+            customers = customers.Where(x => x.Email.Contains(query.Email));
+
+        customers = query.OrderBy switch
+        {
+            "Name" => query.Desc ? customers.OrderByDescending(x => x.Name) : customers.OrderBy(x => x.Name),
+            _ => query.Desc ? customers.OrderByDescending(x => x.CreatedAt) : customers.OrderBy(x => x.CreatedAt)
+        };
+
+        int total = await customers.CountAsync();
+
+        var items = await customers
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .ToListAsync();
+
+        return new PagedResult<Customer>
+        {
+            Items = items,
+            TotalCount = total,
+            Page = query.Page,
+            PageSize = query.PageSize
+        };
     }
 
     public async Task<Customer?> UpdateAsync(Guid id, Customer customer)
