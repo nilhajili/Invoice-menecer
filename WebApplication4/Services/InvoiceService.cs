@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using WebApplication4.Services.Interfaces;
 using WebApplication4.Models;
 using WebApplication4.Data;
@@ -89,16 +90,40 @@ public class InvoiceService : IInvoiceService
         return existing;
     }
 
-    public async Task<bool> ChangeStatusAsync(Guid id, InvoiceStatus newStatus)
+    public async Task<bool> ChangeStatusAsync(
+        ClaimsPrincipal user,
+        Guid id,
+        InvoiceStatus status)
     {
-        var invoice = await _context.Invoices.FindAsync(id);
-        if (invoice == null || invoice.DeletedAt != null)
-            return false; 
-        invoice.Status = newStatus;
-        invoice.UpdatedAt = DateTimeOffset.UtcNow;
+        var invoice = await _context.Invoices
+            .FirstOrDefaultAsync(i => i.Id == id);
 
+        if (invoice == null)
+            return false;
+
+  
+        if (user.IsInRole("Admin"))
+        {
+            invoice.Status = status;
+            invoice.UpdatedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim == null)
+            return false;
+
+        var userId = Guid.Parse(userIdClaim);
+        if (invoice.CustomerId != userId)
+            return false;
+
+        invoice.Status = status;
+        invoice.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
-        return true; 
+
+        return true;
     }
 
     public async Task<bool> HardDeleteAsync(Guid id)

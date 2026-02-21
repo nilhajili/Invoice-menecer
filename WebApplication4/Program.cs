@@ -8,30 +8,35 @@ using WebApplication4.Validators;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using WebApplication4.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var ConnectionString = builder.Configuration.GetConnectionString("DefaultConnectionString");
 
-// Add DbContext
-builder.Services.AddDbContext<InvoiceDbContext>(options =>
-    options.UseSqlServer(ConnectionString)
-);
-
-// Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-// Add services
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 
-// Add FluentValidation
+
 builder.Services.AddControllers()
     .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<CreateCustomerDtoValidator>());
 
-// Swagger / OpenAPI
+
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<InvoiceDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("TaskStatusChangePolicy", policy =>
+        policy.Requirements.Add(new TaskStatusChangeRequirement()));
+});
+
+builder.Services.AddScoped<IAuthorizationHandler, TaskStatusChangeHandler>();
 
 var app = builder.Build();
 

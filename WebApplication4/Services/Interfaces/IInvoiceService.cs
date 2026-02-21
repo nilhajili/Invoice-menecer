@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using WebApplication4.Models;
 using WebApplication4.DTOs;
 
@@ -12,6 +13,9 @@ namespace WebApplication4.Services.Interfaces
         Task<Invoice?> UpdateAsync(Guid id, Invoice invoice);
         Task<bool> HardDeleteAsync(Guid id);
         Task<bool> ArchiveAsync(Guid id);
-        Task<bool> ChangeStatusAsync(Guid id, InvoiceStatus status);
+        Task<bool> ChangeStatusAsync(
+            ClaimsPrincipal user,
+            Guid id,
+            InvoiceStatus status);
     }
 }

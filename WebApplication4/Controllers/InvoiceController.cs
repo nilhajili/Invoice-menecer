@@ -12,7 +12,6 @@ public class InvoiceController : ControllerBase
 {
     private readonly IInvoiceService _service;
     private readonly IMapper _mapper;
-
     public InvoiceController(IInvoiceService service, IMapper mapper)
     {
         _service = service;
@@ -37,15 +36,6 @@ public class InvoiceController : ControllerBase
         if (updated == null)
             return BadRequest("Only non-sent invoices can be updated.");
         return Ok(_mapper.Map<InvoiceDto>(updated));
-    }
-
-    [HttpPatch("{id:guid}/status")]
-    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] InvoiceStatusDto dto)
-    {
-        var result = await _service.ChangeStatusAsync(id, dto.Status);
-        if (!result)
-            return BadRequest("Cannot change status.");
-        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
@@ -80,5 +70,15 @@ public class InvoiceController : ControllerBase
         if (invoice == null)
             return NotFound();
         return Ok(_mapper.Map<InvoiceDto>(invoice));
+    }
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] InvoiceStatusDto dto)
+    {
+        var succeeded = await _service.ChangeStatusAsync(User, id, dto.Status);
+
+        if (!succeeded)
+            return Forbid();
+
+        return NoContent();
     }
 }

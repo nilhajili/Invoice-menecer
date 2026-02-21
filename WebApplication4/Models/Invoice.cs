@@ -21,6 +21,7 @@ public class Invoice
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
+    public Guid CreatedByUserId { get; set; }
 }
 
 public enum InvoiceStatus
