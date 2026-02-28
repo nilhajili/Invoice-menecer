@@ -145,4 +145,11 @@ public class InvoiceService : IInvoiceService
         await _context.SaveChangesAsync();
         return true;
     }
+    public async Task<Invoice?> GetInvoiceByIdAsync(Guid id)
+    {
+        return await _context.Invoices
+            .Include(x => x.Customer)
+            .Include(x => x.Rows)
+            .FirstOrDefaultAsync(x => x.Id == id);
+    }
 }

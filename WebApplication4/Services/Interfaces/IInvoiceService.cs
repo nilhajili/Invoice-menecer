@@ -17,5 +17,6 @@ namespace WebApplication4.Services.Interfaces
             ClaimsPrincipal user,
             Guid id,
             InvoiceStatus status);
+        Task<Invoice?> GetInvoiceByIdAsync(Guid id);
     }
 }

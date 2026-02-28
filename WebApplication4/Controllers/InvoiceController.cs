@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using WebApplication4.Models;
 using WebApplication4.Services.Interfaces;
 using WebApplication4.DTOs;
@@ -12,11 +14,20 @@ public class InvoiceController : ControllerBase
 {
     private readonly IInvoiceService _service;
     private readonly IMapper _mapper;
+    private readonly IInvoiceDocumentService _invoiceDocumentService;
+
+    public InvoiceController(IInvoiceDocumentService invoiceDocumentService, IInvoiceService invoiceService)
+    {
+        _invoiceDocumentService = invoiceDocumentService;
+        _service = invoiceService;
+    }
+    
     public InvoiceController(IInvoiceService service, IMapper mapper)
     {
         _service = service;
         _mapper = mapper;
     }
+    
 
     [HttpPost]
     public async Task<ActionResult<InvoiceDto>> Create([FromBody] CreateInvoiceDto dto)
@@ -80,5 +91,20 @@ public class InvoiceController : ControllerBase
             return Forbid();
 
         return NoContent();
+    }
+    [HttpGet("{id}/download")]
+    [Authorize]
+    public async Task<IActionResult> DownloadInvoice(Guid id, string format = "pdf")
+    {
+        var result = await _invoiceDocumentService.GenerateDownloadAsync(id, format);
+
+        if (result is null)
+            return NotFound();
+
+        var invoice = await _service.GetInvoiceByIdAsync(id);
+        if (invoice.CreatedByUserId != Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!))
+            return Forbid();
+
+        return File(result.Value.stream, result.Value.contentType, result.Value.fileName);
     }
 }

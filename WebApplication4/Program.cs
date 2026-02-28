@@ -65,6 +65,7 @@ builder.Services.AddAuthorization(options =>
         policy.Requirements.Add(new TaskStatusChangeRequirement()));
 });
 
+builder.Services.AddScoped<IInvoiceDocumentService, InvoiceDocumentService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
